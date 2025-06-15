@@ -39,7 +39,7 @@ export default function Home() {
     if (isNaN(total) || total <= 0) return null;
 
     let totalWeightedCount = 0;
-    let weightedCounts: { [key in Rank]: number } = {
+    const weightedCounts: { [key in Rank]: number } = {
       A: 0, B: 0, C: 0, D: 0, E: 0,
     };
 
@@ -76,10 +76,10 @@ export default function Home() {
   // 各ランクの「1人あたり金額 × 人数」の合計を計算
   const totalResult = result
     ? ranks.reduce((sum, rank) => {
-        const count = parseInt(amounts[rank].count, 10);
-        if (isNaN(count) || count <= 0) return sum;
-        return sum + result[rank] * count;
-      }, 0)
+      const count = parseInt(amounts[rank].count, 10);
+      if (isNaN(count) || count <= 0) return sum;
+      return sum + result[rank] * count;
+    }, 0)
     : 0;
 
   return (
