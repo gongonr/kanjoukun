@@ -23,6 +23,10 @@ export default function Home() {
   });
   const [totalAmount, setTotalAmount] = useState("");
 
+  // モバイル表示での段階的表示用
+  // Aは常に表示なので、B〜Eの4つを順に増やす（最大4）
+  const [visibleCount, setVisibleCount] = useState(0);
+
   const handleChange = (
     rank: Rank,
     field: keyof Amount,
@@ -64,7 +68,8 @@ export default function Home() {
         perPersonAmounts[rank] = 0;
       } else {
         perPersonAmounts[rank] = Math.ceil(
-          (total * (weightedCounts[rank] / totalWeightedCount)) / parseInt(amounts[rank].count, 10)
+          (total * (weightedCounts[rank] / totalWeightedCount)) /
+          parseInt(amounts[rank].count, 10)
         );
       }
     }
@@ -73,7 +78,6 @@ export default function Home() {
 
   const result = calculate();
 
-  // 各ランクの「1人あたり金額 × 人数」の合計を計算
   const totalResult = result
     ? ranks.reduce((sum, rank) => {
       const count = parseInt(amounts[rank].count, 10);
@@ -82,11 +86,33 @@ export default function Home() {
     }, 0)
     : 0;
 
-  return (
-    <div className="min-h-screen bg-gray-100 text-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 bg-white p-6 rounded shadow-md relative">
-        <h1 className="text-xl font-bold text-center">勘定くん</h1>
+  // モバイル用に表示判定関数
+  // Aは常に表示、B〜Eは visibleCount に応じて表示
+  const isMobileRankVisible = (rank: Rank, index: number) => {
+    if (index === 0) return true; // Aは常に表示
+    // PCなら常に表示（sm以上はflex-rowなのでここではCSSの隠しはしない）
+    // ここはJSX側でモバイル判定はCSSのクラスで対応し、B〜EはvisibleCountで制御
+    return index <= visibleCount;
+  };
 
+  return (
+    <div className="min-h-screen bg-gray-100 text-black flex flex-col sm:flex-row items-center justify-start sm:justify-center p-4 relative">
+      {/* モバイル用ヘッダー */}
+      <div className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white py-4 rounded sm:hidden">
+        <h1 className="text-2xl font-bold text-center">
+          勘定くん
+        </h1>
+      </div>
+
+
+      {/* メインコンテンツ */}
+      <div className="w-full max-w-md bg-white p-6 rounded shadow-md space-y-6 mt-14 sm:mt-0">
+        {/* PC用タイトル */}
+        <h1 className="text-xl font-bold text-center hidden sm:block">
+          勘定くん
+        </h1>
+
+        {/* 合計金額入力 */}
         <div className="flex items-center border rounded p-2 bg-gray-50">
           <input
             type="number"
@@ -98,44 +124,73 @@ export default function Home() {
           <span className="ml-2">円</span>
         </div>
 
-        {ranks.map((rank) => (
-          <div key={rank} className="flex items-center space-x-3">
-            <div className="w-6 font-bold">{rank}</div>
+        {/* 各ランクの入力欄 */}
+        {ranks.map((rank, i) => {
+          // モバイル時の表示判定
+          // sm以上は常に表示
+          // sm未満はvisibleCountまで表示
+          // → CSSのhidden sm:flex を利用しつつJSX側で制御
+          // モバイルで非表示の時はhiddenに
+          const isVisibleOnMobile = isMobileRankVisible(rank, i);
 
-            <input
-              type="number"
-              step="0.1"
-              min="1"
-              placeholder="重み"
-              value={amounts[rank].weight}
-              onChange={(e) => handleChange(rank, "weight", e.target.value)}
-              className="w-20 p-2 border rounded text-right"
-            />
-            <span>×</span>
+          return (
+            <div
+              key={rank}
+              className={`flex flex-col sm:flex-row items-center sm:space-x-3 space-y-2 sm:space-y-0
+                ${!isVisibleOnMobile ? "hidden" : "flex"}
+                sm:flex
+              `}
+            >
+              <div className="w-full sm:w-6 font-bold text-center sm:text-left">
+                {rank}
+              </div>
 
-            <input
-              type="number"
-              placeholder="人数"
-              min="0"
-              value={amounts[rank].count}
-              onChange={(e) => handleChange(rank, "count", e.target.value)}
-              className="w-20 p-2 border rounded text-right"
-            />
-            <span>人</span>
+              <input
+                type="number"
+                step="0.1"
+                min="1"
+                placeholder="重み"
+                value={amounts[rank].weight}
+                onChange={(e) => handleChange(rank, "weight", e.target.value)}
+                className="w-full sm:w-20 p-2 border rounded text-right"
+              />
+              <span className="hidden sm:inline">×</span>
 
-            <div className="flex-grow text-right font-semibold">
-              {result && result[rank] > 0 ? `${result[rank]} 円` : "-"}
+              <input
+                type="number"
+                placeholder="人数"
+                min="0"
+                value={amounts[rank].count}
+                onChange={(e) => handleChange(rank, "count", e.target.value)}
+                className="w-full sm:w-20 p-2 border rounded text-right"
+              />
+              <span className="hidden sm:inline">人</span>
+
+              <div className="w-full sm:flex-grow text-right font-semibold">
+                {result && result[rank] > 0 ? `${result[rank]} 円` : "-"}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
-        {/* 右下に合計金額表示 */}
-        <div className="absolute bottom-4 right-4 font-bold text-lg">
+        {/* モバイル時だけ表示する「もっと見る」ボタン */}
+        <div className="sm:hidden text-center">
+          {visibleCount < ranks.length - 1 && (
+            <button
+              onClick={() => setVisibleCount((c) => c + 1)}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              ランクを追加
+            </button>
+          )}
+        </div>
+
+        {/* 合計金額表示 */}
+        <div className="text-right font-bold text-lg">
           合計: {totalResult > 0 ? `${totalResult} 円` : "-"}
         </div>
 
         <style jsx>{`
-          /* 合計金額入力のスピンボタン非表示 */
           input.no-spin::-webkit-outer-spin-button,
           input.no-spin::-webkit-inner-spin-button {
             -webkit-appearance: none;
