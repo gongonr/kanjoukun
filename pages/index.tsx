@@ -1,8 +1,20 @@
 // pages/index.tsx
 import { useState } from "react";
 
+const ranks = ["A", "B", "C", "D", "E"] as const;
+type Rank = typeof ranks[number];
+
+type Amount = {
+  weight: string;
+  count: string;
+};
+
+type AmountsType = {
+  [key in Rank]: Amount;
+};
+
 export default function Home() {
-  const [amounts, setAmounts] = useState({
+  const [amounts, setAmounts] = useState<AmountsType>({
     A: { weight: "", count: "" },
     B: { weight: "", count: "" },
     C: { weight: "", count: "" },
@@ -11,7 +23,11 @@ export default function Home() {
   });
   const [totalAmount, setTotalAmount] = useState("");
 
-  const handleChange = (rank: string, field: "weight" | "count", value: string) => {
+  const handleChange = (
+    rank: Rank,
+    field: keyof Amount,
+    value: string
+  ) => {
     setAmounts((prev) => ({
       ...prev,
       [rank]: { ...prev[rank], [field]: value },
@@ -23,9 +39,11 @@ export default function Home() {
     if (isNaN(total) || total <= 0) return null;
 
     let totalWeightedCount = 0;
-    let weightedCounts: { [key: string]: number } = {};
+    let weightedCounts: { [key in Rank]: number } = {
+      A: 0, B: 0, C: 0, D: 0, E: 0,
+    };
 
-    for (const rank of ["A", "B", "C", "D", "E"]) {
+    for (const rank of ranks) {
       const weight = parseFloat(amounts[rank].weight);
       const count = parseInt(amounts[rank].count, 10);
       if (isNaN(weight) || weight <= 0 || isNaN(count) || count <= 0) {
@@ -37,8 +55,11 @@ export default function Home() {
     }
     if (totalWeightedCount === 0) return null;
 
-    const perPersonAmounts: { [key: string]: number } = {};
-    for (const rank of ["A", "B", "C", "D", "E"]) {
+    const perPersonAmounts: { [key in Rank]: number } = {
+      A: 0, B: 0, C: 0, D: 0, E: 0,
+    };
+
+    for (const rank of ranks) {
       if (weightedCounts[rank] === 0) {
         perPersonAmounts[rank] = 0;
       } else {
@@ -52,9 +73,18 @@ export default function Home() {
 
   const result = calculate();
 
+  // 各ランクの「1人あたり金額 × 人数」の合計を計算
+  const totalResult = result
+    ? ranks.reduce((sum, rank) => {
+        const count = parseInt(amounts[rank].count, 10);
+        if (isNaN(count) || count <= 0) return sum;
+        return sum + result[rank] * count;
+      }, 0)
+    : 0;
+
   return (
     <div className="min-h-screen bg-gray-100 text-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6 bg-white p-6 rounded shadow-md">
+      <div className="w-full max-w-md space-y-6 bg-white p-6 rounded shadow-md relative">
         <h1 className="text-xl font-bold text-center">勘定くん</h1>
 
         <div className="flex items-center border rounded p-2 bg-gray-50">
@@ -68,7 +98,7 @@ export default function Home() {
           <span className="ml-2">円</span>
         </div>
 
-        {["A", "B", "C", "D", "E"].map((rank) => (
+        {ranks.map((rank) => (
           <div key={rank} className="flex items-center space-x-3">
             <div className="w-6 font-bold">{rank}</div>
 
@@ -98,6 +128,11 @@ export default function Home() {
             </div>
           </div>
         ))}
+
+        {/* 右下に合計金額表示 */}
+        <div className="absolute bottom-4 right-4 font-bold text-lg">
+          合計: {totalResult > 0 ? `${totalResult} 円` : "-"}
+        </div>
 
         <style jsx>{`
           /* 合計金額入力のスピンボタン非表示 */
