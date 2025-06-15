@@ -34,6 +34,16 @@ export default function Home() {
     }));
   };
 
+  const handleRemoveRank = (index: number) => {
+    if (index === 0) return; // Aは削除不可
+    const rank = ranks[index];
+    setAmounts((prev) => ({
+      ...prev,
+      [rank]: { weight: "0", count: "0" },
+    }));
+    setVisibleCount((prev) => (prev >= index ? prev - 1 : prev));
+  };
+
   const calculate = () => {
     const total = parseFloat(totalAmount);
     if (isNaN(total) || total <= 0) return null;
@@ -76,10 +86,10 @@ export default function Home() {
 
   const totalResult = result
     ? ranks.reduce((sum, rank) => {
-      const count = parseInt(amounts[rank].count, 10);
-      if (isNaN(count) || count <= 0) return sum;
-      return sum + result[rank] * count;
-    }, 0)
+        const count = parseInt(amounts[rank].count, 10);
+        if (isNaN(count) || count <= 0) return sum;
+        return sum + result[rank] * count;
+      }, 0)
     : 0;
 
   const isMobileRankVisible = (rank: Rank, index: number) => {
@@ -88,18 +98,19 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 text-black flex flex-col sm:flex-row items-center justify-start sm:justify-center p-4 relative">
+    <div className="min-h-screen bg-gray-100 text-black flex flex-col sm:flex-row items-center justify-start sm:justify-center p-4">
+      {/* スマホヘッダー */}
       <div className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white py-4 rounded sm:hidden">
-        <h1 className="text-2xl font-bold text-center">
-          勘定くん
-        </h1>
+        <h1 className="text-2xl font-bold text-center">勘定くん</h1>
       </div>
 
-      <div className="w-full max-w-md bg-white p-6 rounded shadow-md space-y-6 mt-14 sm:mt-0">
+      {/* メインパネル */}
+      <div className="w-full max-w-md bg-white p-6 rounded-lg shadow-md space-y-6 mt-14 sm:mt-0">
         <h1 className="text-xl font-bold text-center hidden sm:block">
           勘定くん
         </h1>
 
+        {/* 合計金額入力 */}
         <div className="flex items-center border rounded p-2 bg-gray-50">
           <input
             type="number"
@@ -111,83 +122,112 @@ export default function Home() {
           <span className="ml-2">円</span>
         </div>
 
-        {ranks.map((rank, i) => {
-          const isVisibleOnMobile = isMobileRankVisible(rank, i);
+        {/* ────── カード形式でランク表示 ────── */}
+        <div className="space-y-4">
+          {ranks.map((rank, i) => {
+            const isVisibleOnMobile = isMobileRankVisible(rank, i);
+            return (
+              <div
+                key={rank}
+                className={`
+                  ${!isVisibleOnMobile ? "hidden" : "flex"} sm:flex
+                  flex-col sm:flex-row items-start sm:items-center
+                  sm:space-x-3 space-y-2 sm:space-y-0
+                  border border-gray-200 bg-white rounded-lg p-4
+                  shadow-sm hover:shadow-md transition-shadow duration-150
+                `}
+              >
+                <div className="w-full sm:w-6 font-bold text-center sm:text-left">
+                  {rank}
+                </div>
 
-          return (
-            <div
-              key={rank}
-              className={`flex flex-col sm:flex-row items-start sm:items-center sm:space-x-3 space-y-2 sm:space-y-0
-                ${!isVisibleOnMobile ? "hidden" : "flex"}
-                sm:flex
-              `}
-            >
-              <div className="w-full sm:w-6 font-bold text-center sm:text-left">
-                {rank}
-              </div>
+                {/* モバイル用：スライダー入力 */}
+                <div className="w-full sm:hidden">
+                  <label className="block text-sm text-gray-700 mb-1">
+                    重み：
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.1"
+                    value={parseFloat(amounts[rank].weight) || 0}
+                    onChange={(e) =>
+                      handleChange(rank, "weight", e.target.value)
+                    }
+                    className="w-full"
+                  />
+                  <div className="text-right text-lg font-semibold text-blue-700">
+                    {parseFloat(amounts[rank].weight) || 0}
+                  </div>
+                </div>
 
-              {/* モバイル用：スライダー入力 */}
-              <div className="w-full sm:hidden">
-                <label className="block text-sm text-gray-700 mb-1">重み：</label>
+                <div className="w-full sm:hidden">
+                  <label className="block text-sm text-gray-700 mb-1">
+                    人数：
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="20"
+                    step="1"
+                    value={parseInt(amounts[rank].count, 10) || 0}
+                    onChange={(e) =>
+                      handleChange(rank, "count", e.target.value)
+                    }
+                    className="w-full"
+                  />
+                  <div className="text-right text-lg font-semibold text-blue-700">
+                    {parseInt(amounts[rank].count, 10) || 0} 人
+                  </div>
+                </div>
+
+                {/* 削除ボタン（モバイルのみ） */}
+                {i > 0 && (
+                  <button
+                    className="sm:hidden ml-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                    onClick={() => handleRemoveRank(i)}
+                    type="button"
+                  >
+                    削除
+                  </button>
+                )}
+
+                {/* PC用：重み・人数入力 */}
                 <input
-                  type="range"
-                  min="1"
-                  max="3"
+                  type="number"
                   step="0.1"
-                  value={parseFloat(amounts[rank].weight) || 0}
-                  onChange={(e) => handleChange(rank, "weight", e.target.value)}
-                  className="w-full"
+                  min="1"
+                  placeholder="重み"
+                  value={amounts[rank].weight}
+                  onChange={(e) =>
+                    handleChange(rank, "weight", e.target.value)
+                  }
+                  className="hidden sm:block w-20 p-2 border rounded text-right"
                 />
-                <div className="text-right text-lg font-semibold text-blue-700">
-                  {parseFloat(amounts[rank].weight) || 0}
-                </div>
-              </div>
-
-              <div className="w-full sm:hidden">
-                <label className="block text-sm text-gray-700 mb-1">人数：</label>
+                <span className="hidden sm:inline">×</span>
                 <input
-                  type="range"
+                  type="number"
+                  placeholder="人数"
                   min="0"
-                  max="20"
-                  step="1"
-                  value={parseInt(amounts[rank].count, 10) || 0}
-                  onChange={(e) => handleChange(rank, "count", e.target.value)}
-                  className="w-full"
+                  value={amounts[rank].count}
+                  onChange={(e) =>
+                    handleChange(rank, "count", e.target.value)
+                  }
+                  className="hidden sm:block w-20 p-2 border rounded text-right"
                 />
-                <div className="text-right text-lg font-semibold text-blue-700">
-                  {parseInt(amounts[rank].count, 10) || 0} 人
+                <span className="hidden sm:inline">人</span>
+
+                <div className="w-full sm:flex-grow text-right font-semibold">
+                  {result && result[rank] > 0 ? `${result[rank]} 円` : "-"}
                 </div>
               </div>
+            );
+          })}
+        </div>
+        {/* ────── カード形式ここまで ────── */}
 
-              {/* PC用：テキストボックス入力 */}
-              <input
-                type="number"
-                step="0.1"
-                min="1"
-                placeholder="重み"
-                value={amounts[rank].weight}
-                onChange={(e) => handleChange(rank, "weight", e.target.value)}
-                className="hidden sm:block w-20 p-2 border rounded text-right"
-              />
-              <span className="hidden sm:inline">×</span>
-
-              <input
-                type="number"
-                placeholder="人数"
-                min="0"
-                value={amounts[rank].count}
-                onChange={(e) => handleChange(rank, "count", e.target.value)}
-                className="hidden sm:block w-20 p-2 border rounded text-right"
-              />
-              <span className="hidden sm:inline">人</span>
-
-              <div className="w-full sm:flex-grow text-right font-semibold">
-                {result && result[rank] > 0 ? `${result[rank]} 円` : "-"}
-              </div>
-            </div>
-          );
-        })}
-
+        {/* モバイルの「ランク追加」 */}
         <div className="sm:hidden text-center">
           {visibleCount < ranks.length - 1 && (
             <button
