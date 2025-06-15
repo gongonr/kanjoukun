@@ -237,7 +237,7 @@ export default function Home() {
                   <span className="hidden sm:inline">人</span>
 
                   <div className="w-full sm:flex-grow text-right font-semibold">
-                    {result && result[rank] > 0 ? `${result[rank]} 円` : "-"}
+                    {result && result[rank] > 0 ? `${result[rank]} 円 /1人` : "-"}
                   </div>
                 </div>
               );
