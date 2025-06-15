@@ -1,4 +1,3 @@
-// pages/index.tsx
 import { useState } from "react";
 
 const ranks = ["A", "B", "C", "D", "E"] as const;
@@ -15,16 +14,13 @@ type AmountsType = {
 
 export default function Home() {
   const [amounts, setAmounts] = useState<AmountsType>({
-    A: { weight: "", count: "" },
-    B: { weight: "", count: "" },
-    C: { weight: "", count: "" },
-    D: { weight: "", count: "" },
-    E: { weight: "", count: "" },
+    A: { weight: "1", count: "1" },
+    B: { weight: "0", count: "0" },
+    C: { weight: "0", count: "0" },
+    D: { weight: "0", count: "0" },
+    E: { weight: "0", count: "0" },
   });
   const [totalAmount, setTotalAmount] = useState("");
-
-  // モバイル表示での段階的表示用
-  // Aは常に表示なので、B〜Eの4つを順に増やす（最大4）
   const [visibleCount, setVisibleCount] = useState(0);
 
   const handleChange = (
@@ -86,33 +82,24 @@ export default function Home() {
     }, 0)
     : 0;
 
-  // モバイル用に表示判定関数
-  // Aは常に表示、B〜Eは visibleCount に応じて表示
   const isMobileRankVisible = (rank: Rank, index: number) => {
-    if (index === 0) return true; // Aは常に表示
-    // PCなら常に表示（sm以上はflex-rowなのでここではCSSの隠しはしない）
-    // ここはJSX側でモバイル判定はCSSのクラスで対応し、B〜EはvisibleCountで制御
+    if (index === 0) return true;
     return index <= visibleCount;
   };
 
   return (
     <div className="min-h-screen bg-gray-100 text-black flex flex-col sm:flex-row items-center justify-start sm:justify-center p-4 relative">
-      {/* モバイル用ヘッダー */}
       <div className="w-full bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white py-4 rounded sm:hidden">
         <h1 className="text-2xl font-bold text-center">
           勘定くん
         </h1>
       </div>
 
-
-      {/* メインコンテンツ */}
       <div className="w-full max-w-md bg-white p-6 rounded shadow-md space-y-6 mt-14 sm:mt-0">
-        {/* PC用タイトル */}
         <h1 className="text-xl font-bold text-center hidden sm:block">
           勘定くん
         </h1>
 
-        {/* 合計金額入力 */}
         <div className="flex items-center border rounded p-2 bg-gray-50">
           <input
             type="number"
@@ -124,19 +111,13 @@ export default function Home() {
           <span className="ml-2">円</span>
         </div>
 
-        {/* 各ランクの入力欄 */}
         {ranks.map((rank, i) => {
-          // モバイル時の表示判定
-          // sm以上は常に表示
-          // sm未満はvisibleCountまで表示
-          // → CSSのhidden sm:flex を利用しつつJSX側で制御
-          // モバイルで非表示の時はhiddenに
           const isVisibleOnMobile = isMobileRankVisible(rank, i);
 
           return (
             <div
               key={rank}
-              className={`flex flex-col sm:flex-row items-center sm:space-x-3 space-y-2 sm:space-y-0
+              className={`flex flex-col sm:flex-row items-start sm:items-center sm:space-x-3 space-y-2 sm:space-y-0
                 ${!isVisibleOnMobile ? "hidden" : "flex"}
                 sm:flex
               `}
@@ -145,6 +126,40 @@ export default function Home() {
                 {rank}
               </div>
 
+              {/* モバイル用：スライダー入力 */}
+              <div className="w-full sm:hidden">
+                <label className="block text-sm text-gray-700 mb-1">重み：</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.1"
+                  value={parseFloat(amounts[rank].weight) || 0}
+                  onChange={(e) => handleChange(rank, "weight", e.target.value)}
+                  className="w-full"
+                />
+                <div className="text-right text-lg font-semibold text-blue-700">
+                  {parseFloat(amounts[rank].weight) || 0}
+                </div>
+              </div>
+
+              <div className="w-full sm:hidden">
+                <label className="block text-sm text-gray-700 mb-1">人数：</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value={parseInt(amounts[rank].count, 10) || 0}
+                  onChange={(e) => handleChange(rank, "count", e.target.value)}
+                  className="w-full"
+                />
+                <div className="text-right text-lg font-semibold text-blue-700">
+                  {parseInt(amounts[rank].count, 10) || 0} 人
+                </div>
+              </div>
+
+              {/* PC用：テキストボックス入力 */}
               <input
                 type="number"
                 step="0.1"
@@ -152,7 +167,7 @@ export default function Home() {
                 placeholder="重み"
                 value={amounts[rank].weight}
                 onChange={(e) => handleChange(rank, "weight", e.target.value)}
-                className="w-full sm:w-20 p-2 border rounded text-right"
+                className="hidden sm:block w-20 p-2 border rounded text-right"
               />
               <span className="hidden sm:inline">×</span>
 
@@ -162,7 +177,7 @@ export default function Home() {
                 min="0"
                 value={amounts[rank].count}
                 onChange={(e) => handleChange(rank, "count", e.target.value)}
-                className="w-full sm:w-20 p-2 border rounded text-right"
+                className="hidden sm:block w-20 p-2 border rounded text-right"
               />
               <span className="hidden sm:inline">人</span>
 
@@ -173,7 +188,6 @@ export default function Home() {
           );
         })}
 
-        {/* モバイル時だけ表示する「もっと見る」ボタン */}
         <div className="sm:hidden text-center">
           {visibleCount < ranks.length - 1 && (
             <button
@@ -185,7 +199,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* 合計金額表示 */}
         <div className="text-right font-bold text-lg">
           合計: {totalResult > 0 ? `${totalResult} 円` : "-"}
         </div>
